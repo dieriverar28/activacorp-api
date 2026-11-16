@@ -1,0 +1,134 @@
+### Pruebas de la API. Se ejecutan con IntelliJ (HTTP Client) o con la extensión "REST Client" de VS Code.
+### Los ids corresponden a los datos de prueba: usuarios 1=Camila, 2=Diego, 3=Valentina, 4=Marcos (supervisor).
+
+@host = http://localhost:8082
+
+### 1. Login ejecutivo (200). La clave no aparece en la respuesta
+POST {{host}}/usuarios/login
+Content-Type: application/json
+
+{ "correo": "camila.rojas@agencia.cl", "clave": "ejecutivo123" }
+
+### 2. Login con clave incorrecta (401)
+POST {{host}}/usuarios/login
+Content-Type: application/json
+
+{ "correo": "camila.rojas@agencia.cl", "clave": "mala" }
+
+### 3. Oportunidades de Camila (solo las suyas: 1 y 2)
+GET {{host}}/oportunidades?usuarioId=1
+
+### 4. Oportunidades del supervisor (todas)
+GET {{host}}/oportunidades?usuarioId=4
+
+### 5. Detalle y su historial
+GET {{host}}/oportunidades/1
+
+###
+GET {{host}}/oportunidades/1/seguimientos
+
+### 6. Camila avanza la oportunidad 1: CONTACTO_PENDIENTE -> CONTACTO_REALIZADO (200)
+PUT {{host}}/oportunidades/1/estado
+Content-Type: application/json
+
+{ "usuarioId": 1, "estado": "CONTACTO_REALIZADO" }
+
+### 7. Camila intenta confirmar (409: el ejecutivo no puede)
+PUT {{host}}/oportunidades/1/estado
+Content-Type: application/json
+
+{ "usuarioId": 1, "estado": "PARTICIPACION_CONFIRMADA" }
+
+### 8. Diego intenta mover una oportunidad de Camila (403)
+PUT {{host}}/oportunidades/1/estado
+Content-Type: application/json
+
+{ "usuarioId": 2, "estado": "PROPUESTA_ENVIADA" }
+
+### 9. El supervisor confirma la oportunidad 3 (estaba EN_ESPERA_DE_RESPUESTA) (200)
+PUT {{host}}/oportunidades/3/estado
+Content-Type: application/json
+
+{ "usuarioId": 4, "estado": "PARTICIPACION_CONFIRMADA" }
+
+### 10. El supervisor asigna la oportunidad 5 (sin responsable) a Diego (200)
+PUT {{host}}/oportunidades/5/asignacion
+Content-Type: application/json
+
+{ "usuarioId": 4, "ejecutivoId": 2 }
+
+### 11. Un ejecutivo intenta asignar (403)
+PUT {{host}}/oportunidades/5/asignacion
+Content-Type: application/json
+
+{ "usuarioId": 1, "ejecutivoId": 3 }
+
+### 12. Camila registra una oportunidad (201). Cambia la fecha si ya pasó
+POST {{host}}/oportunidades
+Content-Type: application/json
+
+{
+  "usuarioId": 1,
+  "nombre": "Expo Emprende Sur",
+  "tipoEvento": "Feria empresarial",
+  "fechaEvento": "2027-06-30",
+  "ubicacion": "Centro Cultural",
+  "comuna": "La Florida",
+  "publicoEsperado": 600,
+  "prioridad": "ALTA",
+  "observaciones": "Prueba desde pruebas.http",
+  "organizacionId": 2,
+  "contactoId": 2
+}
+
+### 13. El supervisor intenta registrar (403)
+POST {{host}}/oportunidades
+Content-Type: application/json
+
+{
+  "usuarioId": 4,
+  "nombre": "Evento del supervisor",
+  "tipoEvento": "Feria",
+  "fechaEvento": "2027-06-30",
+  "ubicacion": "Plaza",
+  "comuna": "Santiago",
+  "publicoEsperado": 100,
+  "organizacionId": 1
+}
+
+### 14. Editar datos y prioridad de la oportunidad 1 (200)
+PUT {{host}}/oportunidades/1
+Content-Type: application/json
+
+{
+  "usuarioId": 1,
+  "nombre": "Feria de beneficios municipal 2027",
+  "tipoEvento": "Feria municipal",
+  "fechaEvento": "2027-01-20",
+  "ubicacion": "Plaza de Armas",
+  "comuna": "Puente Alto",
+  "publicoEsperado": 900,
+  "prioridad": "MEDIA",
+  "observaciones": "Editada desde la API"
+}
+
+### 15. Organizaciones con total de contactos
+GET {{host}}/organizaciones
+
+### 16. Crear organización (201) y repetirla (409)
+POST {{host}}/organizaciones
+Content-Type: application/json
+
+{ "nombre": "Cámara de Comercio Sur", "tipo": "Gremio", "comuna": "San Bernardo" }
+
+### 17. Contactos de una organización y crear uno nuevo
+GET {{host}}/organizaciones/1/contactos
+
+###
+POST {{host}}/organizaciones/1/contactos
+Content-Type: application/json
+
+{ "nombre": "Camilo Bravo", "cargo": "Asistente de eventos", "correo": "camilo.bravo@ejemplo.cl", "telefono": "+56 9 5550 0010" }
+
+### 18. Ejecutivos disponibles para asignar
+GET {{host}}/usuarios/ejecutivos
